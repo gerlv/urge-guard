@@ -24,6 +24,9 @@ export default defineConfig({
         entryFileNames: "[name].js",
         chunkFileNames: "chunks/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash][extname]",
+        manualChunks: {
+          preact: ["preact", "preact/hooks"],
+        },
       },
     },
   },
