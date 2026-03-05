@@ -74,6 +74,34 @@ export function DelayPage() {
     return () => window.removeEventListener("blur", onBlur);
   }, [blockInfo, cancelled, remaining]);
 
+  const handleComplete = useCallback(async () => {
+    if (!blockInfo || !tabId || completed) return;
+    setCompleted(true);
+
+    try {
+      await sendMessage({
+        type: "delayComplete",
+        tabId: Number(tabId),
+        entry: {
+          blockedURL: blockInfo.blockedURL,
+          blockedHost: blockInfo.blockedHost,
+          emotionCategory,
+          emotionFlavor,
+          intensity,
+          note: note.trim() || undefined,
+          completed: true,
+        },
+      });
+    } catch (err) {
+      console.error("[Urge Guard] delayComplete failed:", err);
+    }
+
+    // Navigate client-side — the background has set allowedHost so the
+    // navigation won't be blocked.  This also covers the case where
+    // delayAutoLoad is disabled or the background redirect didn't fire.
+    window.location.href = blockInfo.blockedURL;
+  }, [blockInfo, tabId, emotionCategory, emotionFlavor, intensity, note, completed]);
+
   // Auto-complete when countdown reaches 0 (defer if user is typing a note)
   useEffect(() => {
     if (remaining === 0 && blockInfo && !completed && !waitingForNote) {
@@ -83,26 +111,7 @@ export function DelayPage() {
         handleComplete();
       }
     }
-  }, [remaining, blockInfo, completed, waitingForNote]);
-
-  const handleComplete = useCallback(async () => {
-    if (!blockInfo || !tabId || completed) return;
-    setCompleted(true);
-
-    await sendMessage({
-      type: "delayComplete",
-      tabId: Number(tabId),
-      entry: {
-        blockedURL: blockInfo.blockedURL,
-        blockedHost: blockInfo.blockedHost,
-        emotionCategory,
-        emotionFlavor,
-        intensity,
-        note: note.trim() || undefined,
-        completed: true,
-      },
-    });
-  }, [blockInfo, tabId, emotionCategory, emotionFlavor, intensity, note, completed]);
+  }, [remaining, blockInfo, completed, waitingForNote, handleComplete]);
 
   if (error) {
     return (
